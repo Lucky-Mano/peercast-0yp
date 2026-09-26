@@ -1,4 +1,4 @@
-# App-only host mysqld connection. The VPS stack lives in yayaue.me/compose.yaml.
+# App-only host PostgreSQL connection. The VPS stack lives in yayaue.me/compose.yaml.
 services:
   app:
     environment:

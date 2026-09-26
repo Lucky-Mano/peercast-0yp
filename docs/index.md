@@ -7,7 +7,7 @@
 | [architecture.md](architecture.md) | システム構成・コンポーネント・データフロー |
 | [configuration.md](configuration.md) | 設定ファイルリファレンス（TOML・環境変数） |
 | [HTTP_API.md](HTTP_API.md) | HTTP エンドポイント仕様（index.txt・API・統計ページ） |
-| [database.md](database.md) | MySQL スキーマ（channel_sessions・channel_snapshots） |
+| [database.md](database.md) | PostgreSQL スキーマ（channel_sessions・channel_snapshots） |
 
 ## PeerCast プロトコル
 

@@ -1,0 +1,15 @@
+services:
+  yp-dev:
+    build:
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/home/ubuntu/workspace:cached
+      - ${HOME}/.ssh:/home/ubuntu/.ssh:ro
+    command:
+      - sleep
+      - infinity
+    networks:
+      - devnet
+
+networks:
+  devnet:

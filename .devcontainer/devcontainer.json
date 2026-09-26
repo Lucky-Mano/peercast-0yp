@@ -1,0 +1,6 @@
+{
+  "dockerComposeFile": "compose.yaml",
+  "service": "yp-dev",
+  "remoteUser": "ubuntu",
+  "workspaceFolder": "/home/ubuntu/workspace"
+}

@@ -53,24 +53,24 @@ func (r *SnapshotRepo) Insert(ctx context.Context, sessionID int64, s channel.Ch
 			 name, bitrate, genre, url, description, comment, content_type,
 			 hidden_listeners,
 			 track_title, track_artist, track_contact, track_album)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON DUPLICATE KEY UPDATE
-			session_id       = VALUES(session_id),
-			channel_id       = VALUES(channel_id),
-			listeners        = VALUES(listeners),
-			relays           = VALUES(relays),
-			age              = VALUES(age),
-			bitrate          = VALUES(bitrate),
-			genre            = VALUES(genre),
-			url              = VALUES(url),
-			description      = VALUES(description),
-			comment          = VALUES(comment),
-			content_type     = VALUES(content_type),
-			hidden_listeners = VALUES(hidden_listeners),
-			track_title      = VALUES(track_title),
-			track_artist     = VALUES(track_artist),
-			track_contact    = VALUES(track_contact),
-			track_album      = VALUES(track_album)`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+		ON CONFLICT (recorded_at, name) DO UPDATE SET
+			session_id       = EXCLUDED.session_id,
+			channel_id       = EXCLUDED.channel_id,
+			listeners        = EXCLUDED.listeners,
+			relays           = EXCLUDED.relays,
+			age              = EXCLUDED.age,
+			bitrate          = EXCLUDED.bitrate,
+			genre            = EXCLUDED.genre,
+			url              = EXCLUDED.url,
+			description      = EXCLUDED.description,
+			comment          = EXCLUDED.comment,
+			content_type     = EXCLUDED.content_type,
+			hidden_listeners = EXCLUDED.hidden_listeners,
+			track_title      = EXCLUDED.track_title,
+			track_artist     = EXCLUDED.track_artist,
+			track_contact    = EXCLUDED.track_contact,
+			track_album      = EXCLUDED.track_album`,
 		sessionID,
 		hex.EncodeToString(s.Info.ID[:]),
 		t,
@@ -109,7 +109,7 @@ func (r *SnapshotRepo) ListByNameAndDate(ctx context.Context, name string, daySt
 			LAG(ch.track_artist) OVER w AS prev_track_artist
 		FROM channel_snapshots ch
 		JOIN channel_sessions cs ON ch.session_id = cs.id
-		WHERE cs.channel_name = ? AND ch.recorded_at >= ? AND ch.recorded_at < ?
+		WHERE cs.channel_name = $1 AND ch.recorded_at >= $2 AND ch.recorded_at < $3
 		WINDOW w AS (PARTITION BY ch.session_id ORDER BY ch.recorded_at)
 		ORDER BY ch.recorded_at`,
 		name, dayStart, dayEnd,
@@ -188,7 +188,7 @@ func (r *SnapshotRepo) ListByNameAndDateForPage(ctx context.Context, name string
 			LAG(ch.track_artist) OVER w AS prev_track_artist
 		FROM channel_snapshots ch
 		JOIN channel_sessions cs ON ch.session_id = cs.id
-		WHERE cs.channel_name = ? AND ch.recorded_at >= ? AND ch.recorded_at < ?
+		WHERE cs.channel_name = $1 AND ch.recorded_at >= $2 AND ch.recorded_at < $3
 		WINDOW w AS (PARTITION BY ch.session_id ORDER BY ch.recorded_at)
 		ORDER BY ch.recorded_at`,
 		name, dayStart, dayEnd,

@@ -23,7 +23,7 @@ PeerCastプレイヤー向け出力・アーカイブ閲覧を提供する多機
 ### 機能3: アーカイブ・統計
 - 過去の配信履歴・統計を閲覧できるページを React SPA として提供する
 - フロントエンド: 機能1と同一 SPA 内のページ
-- データ取得: React → JSON API (`GET /api/history` 等) → MySQL
+- データ取得: React → JSON API (`GET /api/history` 等) → PostgreSQL
 - 記録する情報:
   - 配信開始・終了時刻（`channel_sessions` テーブル）
   - 1分間隔のリスナー数スナップショット（`channel_snapshots` テーブル）
@@ -33,7 +33,7 @@ PeerCastプレイヤー向け出力・アーカイブ閲覧を提供する多機
 - GitHub の Contribution Graph のように、日単位の配信有無・頻度をカレンダー状のヒートマップで表示する
 - セルの色の濃淡で「その日の配信時間の合計（または配信回数）」を表現する
 - 表示単位: 1セル = 1日、横軸 = 週、縦軸 = 曜日（GitHub 形式）
-- データ取得: React → `GET /api/channels/{id}/activity` → MySQL 集計 → JSON
+- データ取得: React → `GET /api/channels/{id}/activity` → PostgreSQL 集計 → JSON
 - 集計値: **配信時間合計（分）** をセルの濃淡に使用する
 - 日付またぎセッションは日付ごとに按分して計上する（例: 23:10〜01:30の配信 → 当日50分・翌日90分）
 - 集計クエリは `channel_sessions` の `started_at`/`ended_at` と各日の境界（00:00）で切り分けて計算する
@@ -48,7 +48,7 @@ PeerCastプレイヤー向け出力・アーカイブ閲覧を提供する多機
 - 参考: YP4G の getgmt.php（10分間隔）
 - データ取得: React → `GET /api/channels/{id}/timeline?date=YYYYMMDD` → `channel_snapshots` → JSON
 - `channel_snapshots` には配信詳細の変化検出に必要なフィールド（名前・概要・コメント・トラック情報）も記録する
-- 変化検出は `channel_snapshots` を MySQL の `LAG()` 窓関数でスキャンして行う（変化専用テーブルは持たない）
+- 変化検出は `channel_snapshots` を PostgreSQL の `LAG()` 窓関数でスキャンして行う（変化専用テーブルは持たない）
 
 ---
 
@@ -56,7 +56,7 @@ PeerCastプレイヤー向け出力・アーカイブ閲覧を提供する多機
 
 - **デプロイ**: 常に単一マシン上で動作する。スケールアウト不要
 - **プロセス**: PCPサーバ・HTTPサーバを同一バイナリ・同一プロセスで動かす
-- **永続化**: MySQL をアーカイブ・統計の永続化ストアとして使用する
+- **永続化**: PostgreSQL をアーカイブ・統計の永続化ストアとして使用する
 - **リアルタイム状態**: `channel.Store`（インメモリ）を単一の信頼できる情報源とする
 
 ---
@@ -68,7 +68,7 @@ PeerCastプレイヤー向け出力・アーカイブ閲覧を提供する多機
 | 観点 | 判断 |
 |---|---|
 | 機能1・2はStoreの直接参照で実装できる | 別プロセス化するとStore公開手段が必要になり複雑化する |
-| MySQLが外部にある | 歴史データの共有はDBが解決する。gRPCは不要 |
+| PostgreSQLが外部にある | 歴史データの共有はDBが解決する。gRPCは不要 |
 | 常に同一マシン | 分散の利点がない。gRPCのオーバーヘッドだけが残る |
 | 将来の分離 | 要件が変わったとき（別マシン化・独立デプロイ）に分離を検討する |
 
@@ -97,10 +97,10 @@ main.go
   ├── channel.Store          ← 共有インメモリ状態（PCPで更新、APIで参照）
   ├── pcp.Server          ← PCPルートサーバ (port 7144)
   │     └── channel.Store への AddHit / DelHit
-  ├── archive.Recorder       ← Store の変化を観察し MySQL に記録
+  ├── archive.Recorder       ← Store の変化を観察し PostgreSQL に記録
   └── httpd.Server           ← HTTPサーバ (port 80)
         ├── GET /yp/api/channels → channel.Store 参照 → JSON（機能1用API）
-        ├── GET /yp/api/history  → MySQL 参照 → JSON（機能3用API）
+        ├── GET /yp/api/history  → PostgreSQL 参照 → JSON（機能3用API）
         ├── GET /yp/index.txt    → channel.Store 参照 → index.txt（機能2）
         └── GET /yp/*            → React SPA の静的ファイル（機能1・3 UI）
 ```
@@ -115,7 +115,7 @@ PeerCastクライアント          Webブラウザ（React SPA）
   ▼                             ▼
 pcp.Server             httpd.Server
   │ AddHit / DelHit         ├── GET /yp/api/channels → channel.Store（リアルタイム）
-  ▼                         ├── GET /yp/api/history  → MySQL（履歴）
+  ▼                         ├── GET /yp/api/history  → PostgreSQL（履歴）
 channel.Store               └── GET /yp/index.txt    → channel.Store（機能2）
   │
   │ 変化通知（イベントまたはポーリング）
@@ -123,7 +123,7 @@ channel.Store               └── GET /yp/index.txt    → channel.Store（�
 archive.Recorder
   │ INSERT / UPDATE
   ▼
-MySQL
+PostgreSQL
 ```
 
 ### archive.Recorder の実装方針
@@ -148,10 +148,10 @@ MySQL
 |---|---|
 | HTTPサーバのポート番号 | **80** |
 | `archive.Recorder` の実装方式 | **ポーリング差分**（1s間隔、Store変更なし） |
-| MySQLのスキーマ設計 | `design/schema.md` 参照 |
+| PostgreSQLのスキーマ設計 | `design/schema.md` 参照 |
 | React SPA のビルド・配置方法 | `go:embed` でバイナリ埋め込み |
 | HTTPフレームワーク | **chi**（`net/http` 互換、軽量、パスパラメータ対応） |
-| MySQL接続設定 | **設定ファイル**。デプロイ方法は開発環境（Docker）が動いてから検討 |
+| PostgreSQL接続設定 | **設定ファイル**。デプロイ方法は開発環境（Docker）が動いてから検討 |
 | フロントエンドのビルドツール | **Vite**（Create React App は事実上メンテナンス停止） |
 | CORS ポリシー | 本番: same-origin のため不要。開発時: `CORS_ALLOW_ORIGINS` env var で `localhost:5173` 等を許可 |
 | JSON API の認証・認可 | **不要**（公開YPの読み取りAPIのため。管理機能追加時に再検討） |

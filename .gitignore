@@ -7,3 +7,9 @@
 /peercast-0yp
 /web/dist
 /web/node_modules
+
+# Temporary files
+/tmp
+*.log
+*.swp
+*.bak

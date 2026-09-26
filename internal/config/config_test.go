@@ -110,10 +110,10 @@ func TestLoad_DatabaseDSN_FromEnv(t *testing.T) {
 	t.Setenv("DB_USER", "user")
 	t.Setenv("DB_PASSWORD", "pass")
 	t.Setenv("DB_HOST", "localhost")
-	t.Setenv("DB_PORT", "3306")
+	t.Setenv("DB_PORT", "5432")
 	t.Setenv("DB_NAME", "0yp")
 
-	want := "user:pass@tcp(localhost:3306)/0yp?parseTime=true&loc=Local"
+	want := "postgres://user:pass@localhost:5432/0yp?timezone=Asia%2FTokyo"
 	cfg, err := config.Load(writeTemp(t, ""))
 	if err != nil {
 		t.Fatalf("Load: %v", err)

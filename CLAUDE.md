@@ -19,8 +19,8 @@ go vet ./...
 
 compose ファイルは環境別に分かれている：
 - `docker-compose.yml` — 共通（app のみ）
-- `docker-compose.dev.yml` — 開発追加分（Caddy + MariaDB）
-- `docker-compose.prod.yml` — 本番追加分（外部 mysqld への接続設定）
+- `docker-compose.dev.yml` — 開発追加分（Caddy + PostgreSQL）
+- `docker-compose.prod.yml` — 本番追加分（外部PostgreSQLへの接続設定）
 
 ```bash
 # 開発
@@ -42,9 +42,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 main.go                  — entry point, wires all components
 internal/channel/        — Info, Track, Hit, HitList, Store (thread-safe registry)
 internal/pcp/            — PCP root server: handshake, bcst parsing, session management
-internal/archive/        — Recorder: polls Store every 1s, writes sessions/snapshots to MySQL
+internal/archive/        — Recorder: polls Store every 1s, writes sessions/snapshots to PostgreSQL
 internal/httpd/          — chi HTTP server: index.txt, /api/* endpoints
-internal/repository/     — MySQL access (SessionRepo, SnapshotRepo)
+internal/repository/     — PostgreSQL access (SessionRepo, SnapshotRepo)
 internal/config/         — TOML config loader
 ```
 
@@ -70,4 +70,3 @@ internal/config/         — TOML config loader
 | ジャンルフォーマット | `docs/protocol/genre.md` |
 | チャンネル識別と統計の設計方針 | `docs/design/channel_identity.md` |
 | 設計意思決定・参考資料 | `docs/design/` |
-

@@ -18,8 +18,8 @@ Go で実装されており、PCP（PeerCast Protocol）バイナリプロトコ
 Compose の責務は次のとおりです。
 
 - `docker-compose.yml`: app のビルド、TOML マウント、PCP 公開。
-- `docker-compose.dev.yml`: 開発用 Caddy と MariaDB、app の DB 接続先。
-- `docker-compose.prod.yml`: app 単体からホスト mysqld へ接続する設定。Caddy は含みません。
+- `docker-compose.dev.yml`: 開発用 Caddy と PostgreSQL、app の DB 接続先。
+- `docker-compose.prod.yml`: app 単体からホストのPostgreSQLへ接続する設定。Caddy は含みません。
 - VPS 本番全体: 別リポジトリ `yayaue.me/compose.yaml` が Caddy と app を起動します。本リポジトリの Compose と同時起動しないでください。
 
 ```bash
@@ -37,8 +37,8 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml down
 HTTP の `/yp/index.txt` は直接配信し、その他は HTTPS へ転送します。
 HTTPS の `/yp` と `/yp/*` は app、その他は `public/` を配信します。
 `localhost` の HTTPS は Caddy のローカル CA を信頼する必要があります。
-MariaDB は named volume に永続化します。`down -v` はデータも削除するため通常の停止には使いません。
-開発の `DB_PORT` はホスト公開ポートで、app は常に `mariadb:3306` へ接続します。
+PostgreSQL は named volume に永続化します。`down -v` はデータも削除するため通常の停止には使いません。
+開発では app は `postgres:5432` へ接続します。PostgreSQL のホスト公開ポートは `POSTGRES_PORT` で変更できます。
 
 ### 本番
 

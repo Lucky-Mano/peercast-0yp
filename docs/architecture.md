@@ -11,7 +11,7 @@ PCP ルートサーバ・HTTP サーバ・アーカイブ記録器を同一プ�
 main.go
   ├── channel.Store          ← 共有インメモリ状態
   ├── pcp.Server             ← PCP ルートサーバ (port 7144)
-  ├── archive.Recorder       ← MySQL へのアーカイブ記録
+  ├── archive.Recorder       ← PostgreSQL へのアーカイブ記録
   └── httpd.Server           ← HTTP サーバ (port 80)
 ```
 
@@ -53,7 +53,7 @@ Step 8: 読み取りループ: bcst → Store を更新; quit → 切断
 
 ### archive.Recorder (`internal/archive/`)
 
-`channel.Store` をポーリングし、配信セッションとスナップショットを MySQL に記録する。
+`channel.Store` をポーリングし、配信セッションとスナップショットを PostgreSQL に記録する。
 
 - **ポーリング間隔**: 1 秒（セッション開始・終了の検出）
 - **スナップショット記録**: 10 分間隔で `channel_snapshots` に INSERT
@@ -68,9 +68,9 @@ chi ベースの HTTP サーバ。
 | `GET /yp/index.txt` | channel.Store | PeerCast プレイヤー向けチャンネルリスト |
 | `GET /yp/api/config` | TOML config | フロントエンド向けサーバ設定（YP URL・PCP アドレス） |
 | `GET /yp/api/channels` | channel.Store | 現在放送中チャンネル（JSON） |
-| `GET /yp/api/history` | MySQL | 過去の配信セッション一覧 |
-| `GET /yp/api/channels/activity` | MySQL | チャンネル別配信頻度（芝生グラフ用） |
-| `GET /yp/api/channels/timeline` | MySQL | 特定日のスナップショット履歴 |
+| `GET /yp/api/history` | PostgreSQL | 過去の配信セッション一覧 |
+| `GET /yp/api/channels/activity` | PostgreSQL | チャンネル別配信頻度（芝生グラフ用） |
+| `GET /yp/api/channels/timeline` | PostgreSQL | 特定日のスナップショット履歴 |
 | `GET /yp/*` | embed（SPA） | React フロントエンド（静的ファイル） |
 
 各エンドポイントの詳細は [HTTP_API.md](HTTP_API.md) を参照。詳細なプロトコル仕様は [protocol/yp_channel_registration.md](protocol/yp_channel_registration.md) を参照。
@@ -90,10 +90,10 @@ channel.Store               httpd.Server (TCP/80)
   │                            ├── /yp/index.txt      → channel.Store
   │ SnapshotOrdered() × 1s     ├── /yp/api/channels   → channel.Store
   ▼                            ├── /yp/api/config      → TOML config
-archive.Recorder               ├── /yp/api/history    → MySQL
-  │ INSERT / UPDATE             ├── /yp/api/channels/* → MySQL
+archive.Recorder               ├── /yp/api/history    → PostgreSQL
+  │ INSERT / UPDATE             ├── /yp/api/channels/* → PostgreSQL
   ▼                            └── /yp/*              → SPA (embed)
-MySQL
+PostgreSQL
   ├── channel_sessions    ← セッション開始・終了時刻
   └── channel_snapshots   ← 10分間隔リスナー数スナップショット
 ```
@@ -119,7 +119,7 @@ Store
               └── Tracker, Relay, Direct, Firewalled, Recv, CIN（flags）
 ```
 
-### 永続化（MySQL）
+### 永続化（PostgreSQL）
 
 詳細は [database.md](database.md) を参照。
 

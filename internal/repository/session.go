@@ -1,4 +1,4 @@
-// Package repository wraps all MySQL queries for the PeerCast YP.
+// Package repository wraps all PostgreSQL queries for the PeerCast YP.
 package repository
 
 import (
@@ -60,10 +60,12 @@ func trackerIP(s channel.ChannelState) string {
 
 // Insert creates a new session row and returns its ID.
 func (r *SessionRepo) Insert(ctx context.Context, s channel.ChannelState, now time.Time) (int64, error) {
-	res, err := r.db.ExecContext(ctx, `
+	var id int64
+	err := r.db.QueryRowContext(ctx, `
 		INSERT INTO channel_sessions
 			(channel_name, content_type, genre, description, url, comment, tracker_ip, started_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id`,
 		s.Info.Name,
 		s.Info.ContentType,
 		stripYPPrefix(s.Info.Genre),
@@ -72,19 +74,19 @@ func (r *SessionRepo) Insert(ctx context.Context, s channel.ChannelState, now ti
 		s.Info.Comment,
 		trackerIP(s),
 		now,
-	)
+	).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
-	return res.LastInsertId()
+	return id, nil
 }
 
 // Close sets ended_at and updates final metadata on the session row identified by id.
 func (r *SessionRepo) Close(ctx context.Context, id int64, s channel.ChannelState, now time.Time) error {
 	_, err := r.db.ExecContext(ctx, `
 		UPDATE channel_sessions
-		SET ended_at = ?, genre = ?, description = ?, url = ?, comment = ?
-		WHERE id = ?`,
+		SET ended_at = $1, genre = $2, description = $3, url = $4, comment = $5
+		WHERE id = $6`,
 		now,
 		stripYPPrefix(s.Info.Genre),
 		s.Info.Desc,
@@ -101,11 +103,11 @@ func (r *SessionRepo) List(ctx context.Context, limit, offset int) ([]Session, e
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT id, channel_name, content_type, genre, description, url, comment, tracker_ip,
 		       started_at, ended_at,
-		       TIMESTAMPDIFF(MINUTE, started_at, IFNULL(ended_at, NOW())) AS duration_min
+		       FLOOR(EXTRACT(EPOCH FROM (COALESCE(ended_at, NOW()) - started_at)) / 60)::INTEGER AS duration_min
 		FROM channel_sessions
-		WHERE started_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+		WHERE started_at >= NOW() - INTERVAL '7 days'
 		ORDER BY started_at DESC
-		LIMIT ? OFFSET ?`, limit, offset)
+		LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -135,10 +137,10 @@ func (r *SessionRepo) List(ctx context.Context, limit, offset int) ([]Session, e
 // given channel name in the past 365 days, ordered by started_at.
 func (r *SessionRepo) ListIntervalsByName(ctx context.Context, name string) ([]SessionInterval, error) {
 	rows, err := r.db.QueryContext(ctx, `
-		SELECT started_at, IFNULL(ended_at, NOW())
+		SELECT started_at, COALESCE(ended_at, NOW())
 		FROM channel_sessions
-		WHERE channel_name = ?
-		  AND started_at >= DATE_SUB(NOW(), INTERVAL 365 DAY)
+		WHERE channel_name = $1
+		  AND started_at >= NOW() - INTERVAL '365 days'
 		ORDER BY started_at`, name)
 	if err != nil {
 		return nil, err
