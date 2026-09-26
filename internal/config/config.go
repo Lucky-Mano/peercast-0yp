@@ -3,7 +3,8 @@
 package config
 
 import (
-	"fmt"
+	"net"
+	"net/url"
 	"os"
 
 	"github.com/BurntSushi/toml"
@@ -34,20 +35,20 @@ type InfoLine struct {
 
 // HTTPConfig is HTTP server settings.
 type HTTPConfig struct {
-	Port        int        `toml:"port"`         // default 80
+	Port        int        `toml:"port"` // default 80
 	CORSOrigins []string   `toml:"cors_origins"`
 	YPName      string     `toml:"yp_name"`      // displayed in index.txt status line; omit to disable
 	YPURL       string     `toml:"yp_url"`       // YP website URL for status line
 	YPIndexURL  string     `toml:"yp_index_url"` // index.txt URL shown in howto page
 	PCPAddress  string     `toml:"pcp_address"`  // PCP server address shown in howto page
-	Info        []InfoLine `toml:"info"`    // announcement lines shown at top of index.txt
+	Info        []InfoLine `toml:"info"`         // announcement lines shown at top of index.txt
 }
 
 // DatabaseConfig holds database connection parameters.
 // These are populated from environment variables, not the TOML file.
 type DatabaseConfig struct {
 	// DSN is constructed from DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME.
-	// DB_PORT defaults to 3306 if unset.
+	// DB_PORT defaults to 5432 if unset.
 	DSN string
 }
 
@@ -93,9 +94,18 @@ func applyEnv(c *Config) {
 	port := os.Getenv("DB_PORT")
 	name := os.Getenv("DB_NAME")
 	if port == "" {
-		port = "3306"
+		port = "5432"
 	}
 	if user != "" && host != "" && name != "" {
-		c.Database.DSN = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", user, pass, host, port, name)
+		dsn := url.URL{
+			Scheme: "postgres",
+			User:   url.UserPassword(user, pass),
+			Host:   net.JoinHostPort(host, port),
+			Path:   "/" + name,
+		}
+		query := dsn.Query()
+		query.Set("timezone", "Asia/Tokyo")
+		dsn.RawQuery = query.Encode()
+		c.Database.DSN = dsn.String()
 	}
 }

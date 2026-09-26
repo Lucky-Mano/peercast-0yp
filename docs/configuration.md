@@ -69,10 +69,10 @@ pcp_address  = "pcp://example.com/"
 | `DB_USER` | データベースユーザー名 |
 | `DB_PASSWORD` | データベースパスワード |
 | `DB_HOST` | データベースホスト名 |
-| `DB_PORT` | データベースポート（デフォルト: `3306`）。開発ではホストへの公開ポート。本番ではホスト mysqld の接続ポート |
+| `DB_PORT` | PostgreSQLの接続ポート（デフォルト: `5432`） |
 | `DB_NAME` | データベース名 |
 
-開発用 override は `DB_HOST=mariadb`、`DB_PORT=3306` に上書きします。本番用 override は `DB_HOST=host.docker.internal` に上書きします。VPS 全体の本番設定は `yayaue.me/compose.yaml` と同リポジトリの `.env` で管理します。
+開発用 override (`compose.dev.yaml`) は `DB_HOST=postgres`、`DB_PORT=5432` に上書きします。本番用 override (`compose.prod.yaml`) は `DB_HOST=host.docker.internal` に上書きします。VPS 全体の本番設定は `yayaue.me/compose.yaml` と同リポジトリの `.env` で管理します。
 
 ### ポート
 
@@ -80,6 +80,7 @@ pcp_address  = "pcp://example.com/"
 |---|---|
 | `PCP_PORT` | ホスト側に公開する PCP ポート（デフォルト: `7144`） |
 | `HTTP_PORT` | ホスト側に公開する HTTP ポート（デフォルト: `80`）。開発用 Caddy が受け取る。本番は 80 固定 |
+| `POSTGRES_PORT` | 開発用 PostgreSQL コンテナをホストに公開するポート（デフォルト: `5432`）。アプリ間接続には影響しません |
 
 ### HTTPS（Caddy）
 
@@ -92,8 +93,9 @@ pcp_address  = "pcp://example.com/"
 ```
 DB_USER=app
 DB_PASSWORD=secret
-DB_PORT=3306
+DB_PORT=5432
 DB_NAME=peercast_yp
+POSTGRES_PORT=5432
 
 PCP_PORT=7144
 HTTP_PORT=80

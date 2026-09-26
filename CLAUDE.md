@@ -18,22 +18,23 @@ go vet ./...
 ## Docker
 
 compose ファイルは環境別に分かれている：
-- `docker-compose.yml` — 共通（app のみ）
-- `docker-compose.dev.yml` — 開発追加分（Caddy + MariaDB）
-- `docker-compose.prod.yml` — 本番追加分（外部 mysqld への接続設定）
+- `compose.yaml` — 共通（app のみ）
+- `compose.dev.yaml` — 開発追加分（Caddy + PostgreSQL）
+- `compose.prod.yaml` — 本番追加分（外部PostgreSQLへの接続設定）
+- `compose.api.yaml` — JSON API と `index.txt` のみを公開
 
 ```bash
 # 開発
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-docker compose -f docker-compose.yml -f docker-compose.dev.yml restart app
-docker compose -f docker-compose.yml -f docker-compose.dev.yml logs -f app
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+docker compose -f compose.yaml -f compose.dev.yaml up -d
+docker compose -f compose.yaml -f compose.dev.yaml restart app
+docker compose -f compose.yaml -f compose.dev.yaml logs -f app
+docker compose -f compose.yaml -f compose.dev.yaml down
 
 # ホスト DB 接続の app 単体（Caddy なし。VPS 本番は yayaue.me/compose.yaml）
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-docker compose -f docker-compose.yml -f docker-compose.prod.yml restart app
-docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f app
-docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker compose -f compose.yaml -f compose.prod.yaml up -d
+docker compose -f compose.yaml -f compose.prod.yaml restart app
+docker compose -f compose.yaml -f compose.prod.yaml logs -f app
+docker compose -f compose.yaml -f compose.prod.yaml down
 ```
 
 ## Code Structure
@@ -42,9 +43,9 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 main.go                  — entry point, wires all components
 internal/channel/        — Info, Track, Hit, HitList, Store (thread-safe registry)
 internal/pcp/            — PCP root server: handshake, bcst parsing, session management
-internal/archive/        — Recorder: polls Store every 1s, writes sessions/snapshots to MySQL
+internal/archive/        — Recorder: polls Store every 1s, writes sessions/snapshots to PostgreSQL
 internal/httpd/          — chi HTTP server: index.txt, /api/* endpoints
-internal/repository/     — MySQL access (SessionRepo, SnapshotRepo)
+internal/repository/     — PostgreSQL access (SessionRepo, SnapshotRepo)
 internal/config/         — TOML config loader
 ```
 
@@ -70,4 +71,3 @@ internal/config/         — TOML config loader
 | ジャンルフォーマット | `docs/protocol/genre.md` |
 | チャンネル識別と統計の設計方針 | `docs/design/channel_identity.md` |
 | 設計意思決定・参考資料 | `docs/design/` |
-

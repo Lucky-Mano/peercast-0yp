@@ -1,4 +1,4 @@
-// Package archive records channel session and snapshot data to MySQL.
+// Package archive records channel session and snapshot data to PostgreSQL.
 package archive
 
 import (
@@ -12,7 +12,7 @@ import (
 	"github.com/titagaki/peercast-0yp/internal/repository"
 )
 
-// Recorder polls channel.Store and writes sessions/snapshots to MySQL.
+// Recorder polls channel.Store and writes sessions/snapshots to PostgreSQL.
 type Recorder struct {
 	sessions  *repository.SessionRepo
 	snapshots *repository.SnapshotRepo

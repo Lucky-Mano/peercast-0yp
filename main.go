@@ -13,14 +13,14 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/titagaki/peercast-0yp/internal/archive"
 	"github.com/titagaki/peercast-0yp/internal/channel"
 	"github.com/titagaki/peercast-0yp/internal/config"
 	"github.com/titagaki/peercast-0yp/internal/httpd"
-	"github.com/titagaki/peercast-0yp/internal/repository"
 	"github.com/titagaki/peercast-0yp/internal/pcp"
+	"github.com/titagaki/peercast-0yp/internal/repository"
 )
 
 // loadDotEnv reads key=value pairs from .env and sets them as environment
@@ -57,7 +57,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	db, err := sql.Open("mysql", cfg.Database.DSN)
+	db, err := sql.Open("pgx", cfg.Database.DSN)
 	if err != nil {
 		slog.Error("failed to open database", "err", err)
 		os.Exit(1)
