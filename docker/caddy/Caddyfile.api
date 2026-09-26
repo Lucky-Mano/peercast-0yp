@@ -1,0 +1,28 @@
+http://{$SITE_DOMAIN} {
+	@index path /yp/index.txt
+
+	handle @index {
+		reverse_proxy app:80
+	}
+
+	handle {
+		redir https://{host}{uri} permanent
+	}
+}
+
+{$SITE_DOMAIN} {
+	@api path /yp/api/*
+	@index path /yp/index.txt
+
+	handle @api {
+		reverse_proxy app:80
+	}
+
+	handle @index {
+		reverse_proxy app:80
+	}
+
+	handle {
+		respond "Not Found" 404
+	}
+}

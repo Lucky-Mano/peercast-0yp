@@ -17,9 +17,10 @@ Go で実装されており、PCP（PeerCast Protocol）バイナリプロトコ
 
 Compose の責務は次のとおりです。
 
-- `docker-compose.yml`: app のビルド、TOML マウント、PCP 公開。
-- `docker-compose.dev.yml`: 開発用 Caddy と PostgreSQL、app の DB 接続先。
-- `docker-compose.prod.yml`: app 単体からホストのPostgreSQLへ接続する設定。Caddy は含みません。
+- `compose.yaml`: app のビルド、TOML マウント、PCP 公開。
+- `compose.dev.yaml`: 開発用 Caddy と PostgreSQL、app の DB 接続先。
+- `compose.prod.yaml`: app 単体からホストのPostgreSQLへ接続する設定。Caddy は含みません。
+- `compose.api.yaml`: JSON API と `index.txt` のみを公開する構成。
 - VPS 本番全体: 別リポジトリ `yayaue.me/compose.yaml` が Caddy と app を起動します。本リポジトリの Compose と同時起動しないでください。
 
 ```bash
@@ -27,10 +28,10 @@ cp .env.example .env
 # .env の DB 認証情報を編集。ローカル開発では SITE_DOMAIN=localhost に設定
 # peercast-0yp.toml の公開 URL も環境に合わせる
 
-docker compose -f docker-compose.yml -f docker-compose.dev.yml config -q
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
-docker compose -f docker-compose.yml -f docker-compose.dev.yml logs -f app
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+docker compose -f compose.yaml -f compose.dev.yaml config -q
+docker compose -f compose.yaml -f compose.dev.yaml up -d --build
+docker compose -f compose.yaml -f compose.dev.yaml logs -f app
+docker compose -f compose.yaml -f compose.dev.yaml down
 ```
 
 開発用 Caddy は HTTP_PORT（既定例: 80）、443/TCP・UDP、app は PCP_PORT（既定: 7144）を公開します。
@@ -49,8 +50,8 @@ PostgreSQL は named volume に永続化します。`down -v` はデータも削
 ホスト DB に接続する app 単体を起動する場合だけ、次を使用できます（HTTP はホストに公開されません）。
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose -f compose.yaml -f compose.prod.yaml config -q
+docker compose -f compose.yaml -f compose.prod.yaml up -d --build
 ```
 
 ### 設定
@@ -84,9 +85,20 @@ cd web && npm run dev
 
 ```bash
 cd web && npm run build && cd ..
-docker compose -f docker-compose.yml -f docker-compose.dev.yml build app
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d app
+docker compose -f compose.yaml -f compose.dev.yaml build app
+docker compose -f compose.yaml -f compose.dev.yaml up -d app
 ```
+
+### API と index.txt だけを公開する
+
+Web UI を公開せず、JSON API と `index.txt` のみを公開する場合は、専用 Compose を起動します。
+`.env` のDB接続情報と `SITE_DOMAIN` を設定してください。HTTP は HTTPS へ転送し、`index.txt` は HTTP と HTTPS の両方で取得できます。
+
+```bash
+docker compose -f compose.api.yaml up -d --build
+```
+
+公開されるパスは `/yp/api/*` と `/yp/index.txt` です。HTTPS の画面用パスは `404` になります。
 
 ## ドキュメント
 

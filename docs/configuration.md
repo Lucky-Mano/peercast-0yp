@@ -72,7 +72,7 @@ pcp_address  = "pcp://example.com/"
 | `DB_PORT` | PostgreSQLの接続ポート（デフォルト: `5432`） |
 | `DB_NAME` | データベース名 |
 
-開発用 override は `DB_HOST=postgres`、`DB_PORT=5432` に上書きします。本番用 override は `DB_HOST=host.docker.internal` に上書きします。VPS 全体の本番設定は `yayaue.me/compose.yaml` と同リポジトリの `.env` で管理します。
+開発用 override (`compose.dev.yaml`) は `DB_HOST=postgres`、`DB_PORT=5432` に上書きします。本番用 override (`compose.prod.yaml`) は `DB_HOST=host.docker.internal` に上書きします。VPS 全体の本番設定は `yayaue.me/compose.yaml` と同リポジトリの `.env` で管理します。
 
 ### ポート
 

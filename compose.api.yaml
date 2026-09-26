@@ -1,0 +1,59 @@
+# API-only entrypoint. The app still contains the SPA, but Caddy only exposes
+# the JSON API and index.txt paths from outside the Compose network.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${PCP_PORT:-7144}:7144"
+    env_file: .env
+    environment:
+      TZ: Asia/Tokyo
+      DB_HOST: postgres
+      DB_PORT: 5432
+    volumes:
+      - ./peercast-0yp.toml:/app/peercast-0yp.toml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api-gateway:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT}:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/caddy/Caddyfile.api:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN}
+    depends_on:
+      - app
+
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:?DB_USER is required}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_NAME:?DB_NAME is required}
+      TZ: Asia/Tokyo
+    volumes:
+      - postgres18_data:/var/lib/postgresql
+      - ./docker/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres18_data:

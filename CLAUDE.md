@@ -18,22 +18,23 @@ go vet ./...
 ## Docker
 
 compose ファイルは環境別に分かれている：
-- `docker-compose.yml` — 共通（app のみ）
-- `docker-compose.dev.yml` — 開発追加分（Caddy + PostgreSQL）
-- `docker-compose.prod.yml` — 本番追加分（外部PostgreSQLへの接続設定）
+- `compose.yaml` — 共通（app のみ）
+- `compose.dev.yaml` — 開発追加分（Caddy + PostgreSQL）
+- `compose.prod.yaml` — 本番追加分（外部PostgreSQLへの接続設定）
+- `compose.api.yaml` — JSON API と `index.txt` のみを公開
 
 ```bash
 # 開発
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-docker compose -f docker-compose.yml -f docker-compose.dev.yml restart app
-docker compose -f docker-compose.yml -f docker-compose.dev.yml logs -f app
-docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+docker compose -f compose.yaml -f compose.dev.yaml up -d
+docker compose -f compose.yaml -f compose.dev.yaml restart app
+docker compose -f compose.yaml -f compose.dev.yaml logs -f app
+docker compose -f compose.yaml -f compose.dev.yaml down
 
 # ホスト DB 接続の app 単体（Caddy なし。VPS 本番は yayaue.me/compose.yaml）
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-docker compose -f docker-compose.yml -f docker-compose.prod.yml restart app
-docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f app
-docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker compose -f compose.yaml -f compose.prod.yaml up -d
+docker compose -f compose.yaml -f compose.prod.yaml restart app
+docker compose -f compose.yaml -f compose.prod.yaml logs -f app
+docker compose -f compose.yaml -f compose.prod.yaml down
 ```
 
 ## Code Structure
