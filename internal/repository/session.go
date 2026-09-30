@@ -4,7 +4,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"strings"
 	"time"
 
 	"github.com/titagaki/peercast-0yp/internal/channel"
@@ -33,12 +32,13 @@ type SessionInterval struct {
 
 // SessionRepo wraps channel_sessions queries.
 type SessionRepo struct {
-	db *sql.DB
+	db          *sql.DB
+	genrePrefix string
 }
 
 // NewSessionRepo creates a SessionRepo backed by db.
-func NewSessionRepo(db *sql.DB) *SessionRepo {
-	return &SessionRepo{db: db}
+func NewSessionRepo(db *sql.DB, genrePrefix string) *SessionRepo {
+	return &SessionRepo{db: db, genrePrefix: genrePrefix}
 }
 
 // CloseStaleSessions closes sessions left open by a previous crash.
@@ -68,7 +68,7 @@ func (r *SessionRepo) Insert(ctx context.Context, s channel.ChannelState, now ti
 		RETURNING id`,
 		s.Info.Name,
 		s.Info.ContentType,
-		stripYPPrefix(s.Info.Genre),
+		channel.GenreDisplay(r.genrePrefix, s.Info.Genre),
 		s.Info.Desc,
 		s.Info.URL,
 		s.Info.Comment,
@@ -88,7 +88,7 @@ func (r *SessionRepo) Close(ctx context.Context, id int64, s channel.ChannelStat
 		SET ended_at = $1, genre = $2, description = $3, url = $4, comment = $5
 		WHERE id = $6`,
 		now,
-		stripYPPrefix(s.Info.Genre),
+		channel.GenreDisplay(r.genrePrefix, s.Info.Genre),
 		s.Info.Desc,
 		s.Info.URL,
 		s.Info.Comment,
@@ -156,15 +156,4 @@ func (r *SessionRepo) ListIntervalsByName(ctx context.Context, name string) ([]S
 		intervals = append(intervals, iv)
 	}
 	return intervals, rows.Err()
-}
-
-// stripYPPrefix strips the YP control prefix from a genre string.
-// Format: yp[NS:][?][@@@]genre → genre
-func stripYPPrefix(genre string) string {
-	s := strings.TrimPrefix(genre, "yp")
-	if i := strings.IndexByte(s, ':'); i >= 0 {
-		s = s[i+1:]
-	}
-	s = strings.TrimLeft(s, "?@")
-	return s
 }

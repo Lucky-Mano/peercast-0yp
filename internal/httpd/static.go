@@ -6,7 +6,10 @@ import (
 	"net/http"
 )
 
-//go:embed dist
+// The web UI is built into dist/web (see web/vite.config.ts) and is not
+// committed. dist/.gitkeep keeps the embed pattern valid when it is absent.
+//
+//go:embed all:dist
 var distFS embed.FS
 
 var topPageHTML = []byte(`<!DOCTYPE html>
@@ -45,9 +48,14 @@ var topPageHTML = []byte(`<!DOCTYPE html>
 `)
 
 func spaHandler() http.Handler {
-	sub, err := fs.Sub(distFS, "dist")
+	sub, err := fs.Sub(distFS, "dist/web")
 	if err != nil {
 		panic(err)
+	}
+	if _, err := fs.Stat(sub, "index.html"); err != nil {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "web UI is not built", http.StatusNotFound)
+		})
 	}
 	fileServer := http.FileServer(http.FS(sub))
 

@@ -38,6 +38,9 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.PCP.MinClientVersion != 1200 {
 		t.Errorf("PCP.MinClientVersion = %d, want 1200", cfg.PCP.MinClientVersion)
 	}
+	if cfg.PCP.GenrePrefix != "yp" {
+		t.Errorf("PCP.GenrePrefix = %q, want yp", cfg.PCP.GenrePrefix)
+	}
 	if cfg.HTTP.Port != 80 {
 		t.Errorf("HTTP.Port = %d, want 80", cfg.HTTP.Port)
 	}
@@ -52,6 +55,7 @@ max_connections = 50
 update_interval = 60
 hit_timeout = 300
 min_client_version = 1218
+genre_prefix = "vp"
 
 [HTTP]
 port = 8080
@@ -75,6 +79,9 @@ cors_origins = ["http://localhost:3000"]
 	}
 	if cfg.PCP.MinClientVersion != 1218 {
 		t.Errorf("PCP.MinClientVersion = %d, want 1218", cfg.PCP.MinClientVersion)
+	}
+	if cfg.PCP.GenrePrefix != "vp" {
+		t.Errorf("PCP.GenrePrefix = %q, want vp", cfg.PCP.GenrePrefix)
 	}
 	if cfg.HTTP.Port != 8080 {
 		t.Errorf("HTTP.Port = %d, want 8080", cfg.HTTP.Port)

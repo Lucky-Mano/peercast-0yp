@@ -64,7 +64,7 @@ func main() {
 	}
 	defer db.Close()
 
-	store := channel.NewStore()
+	store := channel.NewStoreWithGenrePrefix(cfg.PCP.GenrePrefix)
 
 	srv, err := pcp.New(store, pcp.Config{
 		MaxConnections:   cfg.PCP.MaxConnections,
@@ -77,8 +77,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	sessions := repository.NewSessionRepo(db)
-	snapshots := repository.NewSnapshotRepo(db)
+	sessions := repository.NewSessionRepo(db, cfg.PCP.GenrePrefix)
+	snapshots := repository.NewSnapshotRepo(db, cfg.PCP.GenrePrefix)
 
 	rec := archive.New(sessions, snapshots, store, slog.Default())
 

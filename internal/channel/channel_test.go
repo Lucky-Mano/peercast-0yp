@@ -156,6 +156,29 @@ func TestAddHit_rejectNonYPGenre(t *testing.T) {
 	}
 }
 
+// TestAddHit_configuredGenrePrefix verifies that a Store accepts only its configured prefix.
+func TestAddHit_configuredGenrePrefix(t *testing.T) {
+	s := channel.NewStoreWithGenrePrefix("vp")
+	vpID := makeGnuID(0x01)
+	ypID := makeGnuID(0x11)
+
+	s.AddHit(channel.Info{ID: vpID, BroadcastID: makeGnuID(0x02), Name: "VP", Genre: "vp?ゲーム"},
+		makeHit(makeGnuID(0x03), vpID, "1.2.3.4", 7144, true))
+	s.AddHit(channel.Info{ID: ypID, BroadcastID: makeGnuID(0x12), Name: "YP", Genre: "ypゲーム"},
+		makeHit(makeGnuID(0x13), ypID, "1.2.3.5", 7144, true))
+
+	snap := s.Snapshot()
+	if _, ok := snap[vpID]; !ok {
+		t.Error("channel with the configured vp prefix should have been registered")
+	}
+	if _, ok := snap[ypID]; ok {
+		t.Error("channel with the default yp prefix should not be registered when vp is configured")
+	}
+	if got := s.GenrePrefix(); got != "vp" {
+		t.Errorf("GenrePrefix() = %q, want vp", got)
+	}
+}
+
 // TestAddHit_rejectEmptyName verifies that hits with empty channel names are ignored.
 func TestAddHit_rejectEmptyName(t *testing.T) {
 	s := channel.NewStore()

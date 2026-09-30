@@ -51,7 +51,7 @@ internal/config/         — TOML config loader
 
 ## Key Rules
 
-- **Genre `yp` prefix**: channels whose `Genre` does not start with `yp` are not registered to this YP — exclude silently from `Store.AddHit` and `index.txt`. See `docs/protocol/genre.md`.
+- **Genre prefix**: channels whose `Genre` does not start with the configured `[pcp] genre_prefix` (default `yp`) are not registered to this YP — exclude silently from `Store.AddHit` and `index.txt`. Strip it only via `channel.GenreDisplay`. See `docs/yp/genre.md`.
 - **BCID immutability**: `Store.AddHit` rejects a mismatched `BroadcastID` once one is set (channel ownership check).
 - **IP encoding**: IPv4 → 4 bytes reversed (little-endian); IPv6 → 16 bytes reversed. See `encodeIP`/`decodeIP` in `internal/pcp/` and `decodeIP` in `internal/channel/`.
 - **`index.txt` ordering**: must use `Store.SnapshotOrdered()` (registration order), not `Snapshot()`.

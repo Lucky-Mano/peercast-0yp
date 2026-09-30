@@ -87,14 +87,27 @@ type ChannelState struct {
 
 // Store is a thread-safe, in-memory registry of channel hit lists.
 type Store struct {
-	mu      sync.RWMutex
-	lists   map[pcp.GnuID]*HitList
-	nextSeq uint64 // monotonically increasing; incremented on first AddHit for a channel
+	mu          sync.RWMutex
+	lists       map[pcp.GnuID]*HitList
+	nextSeq     uint64 // monotonically increasing; incremented on first AddHit for a channel
+	genrePrefix string // channels whose genre lacks this prefix are not for this YP
 }
 
-// NewStore returns an empty, ready-to-use Store.
+// NewStore returns an empty Store that accepts genres prefixed with
+// DefaultGenrePrefix.
 func NewStore() *Store {
-	return &Store{lists: make(map[pcp.GnuID]*HitList)}
+	return NewStoreWithGenrePrefix(DefaultGenrePrefix)
+}
+
+// NewStoreWithGenrePrefix returns an empty Store that accepts only channels
+// whose genre starts with prefix.
+func NewStoreWithGenrePrefix(prefix string) *Store {
+	return &Store{lists: make(map[pcp.GnuID]*HitList), genrePrefix: prefix}
+}
+
+// GenrePrefix returns the YP prefix this Store accepts.
+func (s *Store) GenrePrefix() string {
+	return s.genrePrefix
 }
 
 // AddHit registers or refreshes a hit for the given channel.
@@ -110,7 +123,7 @@ func NewStore() *Store {
 //     replaced.
 //  3. If no match is found, the hit is appended.
 func (s *Store) AddHit(info Info, hit Hit) {
-	if info.ID.IsEmpty() || info.Name == "" || !strings.HasPrefix(info.Genre, "yp") {
+	if info.ID.IsEmpty() || info.Name == "" || !strings.HasPrefix(info.Genre, s.genrePrefix) {
 		return
 	}
 
