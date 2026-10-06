@@ -4,13 +4,14 @@ max_connections = 100
 update_interval = 120  # seconds
 hit_timeout = 150      # seconds
 min_client_version = 1200
+genre_prefix = "yp"     # channels whose genre does not start with this are not listed
 
 [http]
 port = 80
-yp_name      = "0yp"
-yp_url       = "https://yayaue.me/yp/"
-yp_index_url = "https://yayaue.me/yp/index.txt"  # shown in howto page
-pcp_address  = "pcp://yayaue.me/"               # shown in howto page
+yp_name      = "yp"
+yp_url       = "https://{YP_URL}/"
+yp_index_url = "https://{YP_INDEX_URL}/index.txt"  # shown in howto page
+pcp_address  = "pcp://{PCP_ADDRESS}/"                 # shown in howto page
 
 # Allowed origins for CORS. Set to the Vite dev server origin when developing locally.
 # In production, leave empty [] — the frontend is served from the same origin and CORS is not needed.

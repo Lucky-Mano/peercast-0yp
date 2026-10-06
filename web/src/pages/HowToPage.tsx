@@ -13,6 +13,7 @@ function CodeBlock({ value, placeholder }: { value?: string; placeholder: string
 export default function HowToPage() {
   const [config, setConfig] = useState<SiteConfig | null>(null)
   useEffect(() => { api.config().then(setConfig).catch(() => {}) }, [])
+  const genrePrefix = config?.genrePrefix
 
   return (
     <div className="max-w-2xl space-y-10 text-base text-washi-text">
@@ -58,7 +59,7 @@ export default function HowToPage() {
         <div className="space-y-3">
           <p className="font-bold text-washi-text">ジャンルの設定</p>
           <p className="text-washi-muted">
-            ジャンル欄の先頭に <code className="bg-washi-surface font-mono text-sm px-1.5 py-0.5 rounded">yp</code> を付けてください。
+            ジャンル欄の先頭に <code className="bg-washi-surface font-mono text-sm px-1.5 py-0.5 rounded">{genrePrefix || '（未設定）'}</code> を付けてください。
             付いていないチャンネルはこの YP には掲載されません。
           </p>
           <table className="w-full border border-washi-border">
@@ -70,11 +71,11 @@ export default function HowToPage() {
             </thead>
             <tbody className="divide-y divide-washi-border text-washi-muted">
               <tr>
-                <td className="py-2 px-4 font-mono text-sm">ypゲーム</td>
+                <td className="py-2 px-4 font-mono text-sm">{genrePrefix ? `${genrePrefix}ゲーム` : '（未設定）'}</td>
                 <td className="py-2 px-4 text-sm">ジャンル「ゲーム」で掲載</td>
               </tr>
               <tr>
-                <td className="py-2 px-4 font-mono text-sm">yp?ゲーム</td>
+                <td className="py-2 px-4 font-mono text-sm">{genrePrefix ? `${genrePrefix}?ゲーム` : '（未設定）'}</td>
                 <td className="py-2 px-4 text-sm">リスナー数を非表示にして掲載</td>
               </tr>
             </tbody>

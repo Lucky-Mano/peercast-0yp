@@ -6,6 +6,8 @@
 # Build output
 /peercast-0yp
 /web/dist
+/internal/httpd/dist/*
+!/internal/httpd/dist/.gitkeep
 /web/node_modules
 
 # Temporary files

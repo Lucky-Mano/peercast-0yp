@@ -80,14 +80,15 @@ cd web && npm run dev
 
 ### フロントエンドの変更を反映する
 
-フロントエンド（`web/`）は `go:embed` でGoバイナリに埋め込まれます。
-変更を反映するにはフロントエンドをビルドしてからDockerイメージを再ビルドしてください。
+フロントエンド（`web/`）は `go:embed` でGoバイナリに埋め込まれます。ビルド成果物（`internal/httpd/dist/web/`）はリポジトリに含めません。
+Dockerイメージのビルドではフロントエンドも自動でビルドされるため、イメージを再ビルドすれば反映されます。
 
 ```bash
-cd web && npm run build && cd ..
 docker compose -f compose.yaml -f compose.dev.yaml build app
 docker compose -f compose.yaml -f compose.dev.yaml up -d app
 ```
+
+ローカルで `go build` する場合は、先に `cd web && npm run build` を実行してください。未ビルドのまま起動すると、Web UI（`/yp/`）は 404 を返します。index.txt と JSON API は利用できます。
 
 ### API と index.txt だけを公開する
 

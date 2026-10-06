@@ -39,12 +39,12 @@ type addrJSON struct {
 	Firewalled bool   `json:"firewalled"`
 }
 
-func buildChannelJSON(hl channel.HitList) channelJSON {
+func buildChannelJSON(hl channel.HitList, genrePrefix string) channelJSON {
 	info := hl.Info
 	out := channelJSON{
 		ID:          fmt.Sprintf("%x", info.ID[:]),
 		Name:        info.Name,
-		Genre:       genreDisplay(info.Genre),
+		Genre:       channel.GenreDisplay(genrePrefix, info.Genre),
 		Desc:        info.Desc,
 		URL:         info.URL,
 		Comment:     info.Comment,
@@ -88,7 +88,7 @@ func (s *Server) handleAPIChannels(w http.ResponseWriter, r *http.Request) {
 
 	entries := make([]channelJSON, 0, len(snap))
 	for _, hl := range snap {
-		entries = append(entries, buildChannelJSON(hl))
+		entries = append(entries, buildChannelJSON(hl, s.store.GenrePrefix()))
 	}
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Name < entries[j].Name })
 

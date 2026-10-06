@@ -28,12 +28,13 @@ type SnapshotRow struct {
 
 // SnapshotRepo wraps channel_snapshots queries.
 type SnapshotRepo struct {
-	db *sql.DB
+	db          *sql.DB
+	genrePrefix string
 }
 
 // NewSnapshotRepo creates a SnapshotRepo backed by db.
-func NewSnapshotRepo(db *sql.DB) *SnapshotRepo {
-	return &SnapshotRepo{db: db}
+func NewSnapshotRepo(db *sql.DB, genrePrefix string) *SnapshotRepo {
+	return &SnapshotRepo{db: db, genrePrefix: genrePrefix}
 }
 
 // Insert writes a snapshot row for the given session.
@@ -79,7 +80,7 @@ func (r *SnapshotRepo) Insert(ctx context.Context, sessionID int64, s channel.Ch
 		age,
 		s.Info.Name,
 		s.Info.Bitrate,
-		stripYPPrefix(s.Info.Genre),
+		channel.GenreDisplay(r.genrePrefix, s.Info.Genre),
 		s.Info.URL,
 		s.Info.Desc,
 		s.Info.Comment,

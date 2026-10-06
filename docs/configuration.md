@@ -20,6 +20,7 @@
 | `update_interval` | int（秒） | `120` | クライアントへの更新要求間隔。クライアントはこの間隔でチャンネル情報を再送する |
 | `hit_timeout` | int（秒） | `180` | ヒットのタイムアウト。最終更新からこの秒数が経過したノードはリストから自動削除 |
 | `min_client_version` | uint32 | `1200` | 受け入れる PeerCast クライアントの最小バージョン番号。未満の場合は `BADAGENT` で切断 |
+| `genre_prefix` | string | `"yp"` | ジャンル先頭の YP プレフィックス。これで始まらないチャンネルは登録しない。`index.txt`・API・DB にはプレフィックスを除いたジャンルを出力する（[genre.md](yp/genre.md)） |
 
 ---
 
@@ -114,6 +115,7 @@ max_connections = 100
 update_interval = 120  # seconds
 hit_timeout = 180      # seconds
 min_client_version = 1200
+genre_prefix = "yp"
 
 [http]
 port = 80

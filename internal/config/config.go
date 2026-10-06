@@ -24,6 +24,7 @@ type PCPConfig struct {
 	UpdateInterval   int    `toml:"update_interval"`    // seconds; default 120
 	HitTimeout       int    `toml:"hit_timeout"`        // seconds; default 180
 	MinClientVersion uint32 `toml:"min_client_version"` // default 1200
+	GenrePrefix      string `toml:"genre_prefix"`       // YP prefix a channel genre must start with; default "yp"
 }
 
 // InfoLine is a single announcement entry shown in index.txt.
@@ -79,6 +80,9 @@ func applyDefaults(c *Config) {
 	}
 	if c.PCP.MinClientVersion == 0 {
 		c.PCP.MinClientVersion = 1200
+	}
+	if c.PCP.GenrePrefix == "" {
+		c.PCP.GenrePrefix = "yp"
 	}
 	if c.HTTP.Port == 0 {
 		c.HTTP.Port = 80

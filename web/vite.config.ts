@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: '/yp/',
   build: {
-    outDir: '../internal/httpd/dist',
+    outDir: '../internal/httpd/dist/web',
     emptyOutDir: true,
   },
   server: {

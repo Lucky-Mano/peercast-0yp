@@ -61,7 +61,7 @@ func TestWriteIndexLine_BasicFormat(t *testing.T) {
 	cs := makeChannelState("My Channel", "Music", 5, 2, []channel.Hit{hit})
 
 	var buf bytes.Buffer
-	writeIndexLine(&buf, cs)
+	writeIndexLine(&buf, cs, channel.DefaultGenrePrefix)
 
 	fields := parseIndexLine(t, buf.String())
 	if fields[0] != "My Channel" {
@@ -110,7 +110,7 @@ func TestWriteIndexLine_Duration(t *testing.T) {
 		cs := makeChannelState("Chan", "Music", 0, 0, []channel.Hit{hit})
 
 		var buf bytes.Buffer
-		writeIndexLine(&buf, cs)
+		writeIndexLine(&buf, cs, channel.DefaultGenrePrefix)
 		fields := parseIndexLine(t, buf.String())
 
 		if fields[15] != tc.wantDur {
@@ -123,7 +123,7 @@ func TestWriteIndexLine_HiddenListeners(t *testing.T) {
 	cs := makeChannelState("Chan", "Music?", 10, 5, nil)
 
 	var buf bytes.Buffer
-	writeIndexLine(&buf, cs)
+	writeIndexLine(&buf, cs, channel.DefaultGenrePrefix)
 	fields := parseIndexLine(t, buf.String())
 
 	if fields[6] != "-1" {
@@ -148,7 +148,7 @@ func TestWriteIndexLine_DirectFlag(t *testing.T) {
 	} {
 		cs := makeChannelState("Chan", "Music", 0, 0, tc.hits)
 		var buf bytes.Buffer
-		writeIndexLine(&buf, cs)
+		writeIndexLine(&buf, cs, channel.DefaultGenrePrefix)
 		fields := parseIndexLine(t, buf.String())
 		if fields[18] != tc.want {
 			t.Errorf("directFlag = %q, want %q", fields[18], tc.want)
@@ -161,7 +161,7 @@ func TestWriteIndexLine_NoTracker(t *testing.T) {
 	cs := makeChannelState("Chan", "Music", 0, 0, nil)
 
 	var buf bytes.Buffer
-	writeIndexLine(&buf, cs)
+	writeIndexLine(&buf, cs, channel.DefaultGenrePrefix)
 	fields := parseIndexLine(t, buf.String())
 
 	if fields[2] != "" {
@@ -199,5 +199,24 @@ func TestHandleIndexTxt_OneChannel(t *testing.T) {
 	}
 	if !strings.HasPrefix(lines[0], "Test Channel<>") {
 		t.Errorf("line does not start with channel name: %q", lines[0])
+	}
+}
+
+func TestHandleIndexTxt_ConfiguredGenrePrefix(t *testing.T) {
+	store := channel.NewStoreWithGenrePrefix("vp")
+	chanID := makeID(0x01)
+	store.AddHit(channel.Info{ID: chanID, BroadcastID: makeID(0x02), Name: "VP Channel", Genre: "vpABC:?ゲーム"},
+		channel.Hit{SessionID: makeID(0x03), Tracker: true, GlobalAddr: net.TCPAddr{IP: net.ParseIP("1.2.3.4"), Port: 7144}, NumListeners: 5})
+
+	s := &Server{store: store}
+	w := httptest.NewRecorder()
+	s.handleIndexTxt(w, httptest.NewRequest(http.MethodGet, "/index.txt", nil))
+
+	fields := parseIndexLine(t, w.Body.String())
+	if fields[4] != "ゲーム" {
+		t.Errorf("field[4] genre = %q, want ゲーム", fields[4])
+	}
+	if fields[6] != "-1" || fields[7] != "-1" {
+		t.Errorf("listeners/relays = %q/%q, want -1/-1", fields[6], fields[7])
 	}
 }

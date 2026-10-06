@@ -35,6 +35,7 @@ export interface ActivityDay {
 export interface SiteConfig {
   ypIndexURL: string
   pcpAddress: string
+  genrePrefix: string
 }
 
 export interface TimelineRow {

@@ -22,9 +22,12 @@ PeerCast プレイヤーが読み込むチャンネルリスト。YP4G 互換フ
 ```json
 {
   "ypIndexURL": "https://example.com/yp/index.txt",
-  "pcpAddress": "pcp://example.com/"
+  "pcpAddress": "pcp://example.com/",
+  "genrePrefix": "yp"
 }
 ```
+
+`genrePrefix` は `[pcp] genre_prefix` の値（既定 `yp`）。使い方ページのジャンル設定の案内に使う。
 
 ---
 

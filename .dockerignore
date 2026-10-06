@@ -1,5 +1,6 @@
 _ref/
 web/node_modules/
+internal/httpd/dist/web/
 peercast-0yp
 .env
 .env.*
