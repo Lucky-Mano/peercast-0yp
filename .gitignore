@@ -1,7 +1,5 @@
 # Sensitive configuration — never commit
 .env
-.env.*
-!.env.example
 
 # Build output
 /peercast-0yp
