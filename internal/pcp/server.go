@@ -20,9 +20,10 @@ import (
 // Protocol-level constants that are part of the PCP implementation and
 // are not operator-configurable.
 const (
-	agentString     = "PeerCastRoot/0.1 (Go)"
-	serverVersion   = uint32(1218)
-	serverVersionVP = uint32(27)
+	agentString      = "PeerCastRoot/0.1 (Go)"
+	serverVersion    = uint32(1218)
+	serverVersionVP  = uint32(27)
+	handshakeTimeout = 30 * time.Second
 )
 
 var versionExPrefix = [2]byte{'Y', 'P'}
@@ -61,6 +62,7 @@ type Server struct {
 
 	mu       sync.Mutex
 	sessions map[pcp.GnuID]*session
+	conns    map[net.Conn]struct{}
 }
 
 // New creates a Server with a random session ID.
@@ -74,6 +76,7 @@ func New(store *channel.Store, cfg Config) (*Server, error) {
 		sessionID: id,
 		store:     store,
 		sessions:  make(map[pcp.GnuID]*session),
+		conns:     make(map[net.Conn]struct{}),
 	}, nil
 }
 
@@ -87,8 +90,8 @@ func (srv *Server) Serve(ctx context.Context, ln net.Listener) error {
 
 	go func() {
 		<-ctx.Done()
-		ln.Close()             // unblock Accept
-		srv.closeAllSessions() // terminate existing connections
+		ln.Close()                // unblock Accept
+		srv.closeAllConnections() // terminate handshakes and existing sessions
 	}()
 
 	go srv.cleanupLoop(ctx)
@@ -105,6 +108,10 @@ func (srv *Server) Serve(ctx context.Context, ln net.Listener) error {
 				continue
 			}
 		}
+		acceptedAt := time.Now()
+		if !srv.admitConn(ctx, conn, acceptedAt) {
+			continue
+		}
 		go srv.handleConn(ctx, conn)
 	}
 }
@@ -119,12 +126,36 @@ func (srv *Server) ListenAndServe(ctx context.Context, addr string) error {
 	return srv.Serve(ctx, ln)
 }
 
-// closeAllSessions closes all active session connections.
-func (srv *Server) closeAllSessions() {
+// admitConn reserves a connection slot and starts its fixed handshake deadline.
+// The timestamp is captured immediately after Accept so time spent waiting for
+// admission also counts against the handshake budget.
+func (srv *Server) admitConn(ctx context.Context, conn net.Conn, acceptedAt time.Time) bool {
 	srv.mu.Lock()
-	conns := make([]net.Conn, 0, len(srv.sessions))
-	for _, s := range srv.sessions {
-		conns = append(conns, s.conn)
+	defer srv.mu.Unlock()
+	if ctx.Err() != nil || len(srv.conns) >= srv.cfg.MaxConnections {
+		_ = conn.Close()
+		return false
+	}
+	if err := conn.SetDeadline(acceptedAt.Add(handshakeTimeout)); err != nil {
+		_ = conn.Close()
+		return false
+	}
+	srv.conns[conn] = struct{}{}
+	return true
+}
+
+func (srv *Server) releaseConn(conn net.Conn) {
+	srv.mu.Lock()
+	delete(srv.conns, conn)
+	srv.mu.Unlock()
+}
+
+// closeAllConnections closes both in-progress handshakes and active sessions.
+func (srv *Server) closeAllConnections() {
+	srv.mu.Lock()
+	conns := make([]net.Conn, 0, len(srv.conns))
+	for conn := range srv.conns {
+		conns = append(conns, conn)
 	}
 	srv.mu.Unlock()
 
@@ -192,6 +223,7 @@ func (s *session) sendLoop() {
 // ----------------------------------------------------------------------------
 
 func (srv *Server) handleConn(ctx context.Context, conn net.Conn) {
+	defer srv.releaseConn(conn)
 	defer conn.Close()
 	remoteAddr := conn.RemoteAddr().(*net.TCPAddr)
 	remoteIP := remoteAddr.IP
@@ -259,11 +291,6 @@ func (srv *Server) handleConn(ctx context.Context, conn net.Conn) {
 	}
 
 	srv.mu.Lock()
-	if len(srv.sessions) >= srv.cfg.MaxConnections {
-		srv.mu.Unlock()
-		sendQuit(pcp.PCPErrorQuit + pcp.PCPErrorUnavailable)
-		return
-	}
 	if _, dup := srv.sessions[helo.SessionID]; dup {
 		srv.mu.Unlock()
 		sendQuit(pcp.PCPErrorQuit + pcp.PCPErrorAlreadyConnected)
@@ -295,6 +322,11 @@ func (srv *Server) handleConn(ctx context.Context, conn net.Conn) {
 	}
 	rootUpd := pcp.NewParentAtom(pcp.PCPRoot, pcp.NewEmptyAtom(pcp.PCPRootUpdate))
 	if err := rootUpd.Write(conn); err != nil {
+		return
+	}
+	// The fixed deadline covers every handshake read and write. Once accepted,
+	// restore the established session's separate idle-read timeout below.
+	if err := conn.SetDeadline(time.Time{}); err != nil {
 		return
 	}
 
@@ -442,4 +474,3 @@ func checkPort(ip net.IP, port uint16) uint16 {
 	conn.Close()
 	return port
 }
-
